@@ -3,6 +3,7 @@ import {
   isValidUpc,
   normalizeItem,
   lookupUpc,
+  searchProducts,
   RATE_LIMIT_MESSAGE,
 } from '@/lib/upcitemdb';
 
@@ -234,6 +235,129 @@ describe('lookupUpc', () => {
     const fetchImpl = vi.fn(async () => jsonResponse({ code: 'OK' }));
     expect(await lookupUpc(VALID_UPC, { fetchImpl: fetchImpl as typeof fetch })).toEqual({
       status: 'not_found',
+    });
+  });
+});
+
+describe('searchProducts', () => {
+  const VALID_EAN = '0027084123456'; // 13 digits
+
+  it('rejects an empty/whitespace query without fetching', async () => {
+    const fetchImpl = vi.fn();
+    expect(await searchProducts('   ', { fetchImpl: fetchImpl as typeof fetch })).toEqual({
+      status: 'error',
+      message: 'Type something to search for.',
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('returns hits with a usable barcode and normalized data', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse({
+        code: 'OK',
+        items: [
+          { title: 'A', upc: VALID_UPC, images: ['https://x/a.jpg'] }, // upc wins
+          { title: 'B', upc: 'nope', ean: VALID_EAN }, // falls back to ean
+          { title: 'C', ean: VALID_EAN }, // upc absent → ean
+          { title: 'D' }, // no code → dropped
+          { title: 'E', upc: 'short', ean: 'alsobad' }, // neither valid → dropped
+        ],
+      }),
+    );
+    const result = await searchProducts('mustang 1:64', { fetchImpl: fetchImpl as typeof fetch });
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') throw new Error('unreachable');
+    expect(result.hits).toEqual([
+      { upc: VALID_UPC, data: normalizeItem({ title: 'A', upc: VALID_UPC, images: ['https://x/a.jpg'] }) },
+      { upc: VALID_EAN, data: normalizeItem({ title: 'B', upc: 'nope', ean: VALID_EAN }) },
+      { upc: VALID_EAN, data: normalizeItem({ title: 'C', ean: VALID_EAN }) },
+    ]);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `https://api.upcitemdb.com/prod/trial/search?s=mustang%201%3A64&type=product`,
+      { headers: { Accept: 'application/json' } },
+    );
+  });
+
+  it('trims the query before searching', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ code: 'OK', items: [] }));
+    await searchProducts('  charger  ', { fetchImpl: fetchImpl as typeof fetch });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `https://api.upcitemdb.com/prod/trial/search?s=charger&type=product`,
+      expect.anything(),
+    );
+  });
+
+  it('treats a missing/non-array items field as no hits', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ code: 'OK' }));
+    expect(await searchProducts('x', { fetchImpl: fetchImpl as typeof fetch })).toEqual({
+      status: 'ok',
+      hits: [],
+    });
+  });
+
+  it('honors a baseUrl override', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ items: [] }));
+    await searchProducts('x', { fetchImpl: fetchImpl as typeof fetch, baseUrl: 'https://proxy.test/upc' });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `https://proxy.test/upc/search?s=x&type=product`,
+      expect.anything(),
+    );
+  });
+
+  it('honors the UPCITEMDB_BASE env var', async () => {
+    vi.stubEnv('UPCITEMDB_BASE', 'https://env.test/base');
+    const fetchImpl = vi.fn(async () => jsonResponse({ items: [] }));
+    await searchProducts('x', { fetchImpl: fetchImpl as typeof fetch });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `https://env.test/base/search?s=x&type=product`,
+      expect.anything(),
+    );
+  });
+
+  it('uses global fetch by default', async () => {
+    const globalFetch = vi.fn(async () => jsonResponse({ items: [] }));
+    vi.stubGlobal('fetch', globalFetch);
+    expect((await searchProducts('x')).status).toBe('ok');
+    expect(globalFetch).toHaveBeenCalledOnce();
+  });
+
+  it('maps 429 and 5xx to rate_limited', async () => {
+    const f429 = vi.fn(async () => jsonResponse({}, { status: 429 }));
+    expect(await searchProducts('x', { fetchImpl: f429 as typeof fetch })).toEqual({
+      status: 'rate_limited',
+      message: RATE_LIMIT_MESSAGE,
+    });
+    const f503 = vi.fn(async () => jsonResponse({}, { status: 503 }));
+    expect(await searchProducts('x', { fetchImpl: f503 as typeof fetch })).toMatchObject({
+      status: 'rate_limited',
+    });
+  });
+
+  it('maps other non-OK statuses to error', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({}, { status: 400 }));
+    expect(await searchProducts('x', { fetchImpl: fetchImpl as typeof fetch })).toEqual({
+      status: 'error',
+      message: 'Catalog search failed (HTTP 400).',
+    });
+  });
+
+  it('maps network failures to error', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error('offline');
+    });
+    expect(await searchProducts('x', { fetchImpl: fetchImpl as typeof fetch })).toEqual({
+      status: 'error',
+      message: 'Could not reach the catalog search service.',
+    });
+  });
+
+  it('maps unparseable JSON to error', async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response('not json', { status: 200, headers: { 'Content-Type': 'text/plain' } }),
+    );
+    expect(await searchProducts('x', { fetchImpl: fetchImpl as typeof fetch })).toEqual({
+      status: 'error',
+      message: 'Catalog search returned an unreadable response.',
     });
   });
 });

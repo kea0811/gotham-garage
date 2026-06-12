@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ComponentType, SVGProps } from 'react';
-import { BarcodeIcon, SparkPhotoIcon, PencilIcon, ArrowLeftIcon } from '@/components/ui/icons';
+import { BarcodeIcon, SparkPhotoIcon, PencilIcon, SearchIcon, ArrowLeftIcon } from '@/components/ui/icons';
 
 export const metadata = { title: 'Add a car' };
 
@@ -21,6 +21,12 @@ const options: Array<{
     Icon: SparkPhotoIcon,
     title: 'Match photo',
     body: 'Loose car? Snap a photo and find it visually.',
+  },
+  {
+    href: '/add/search',
+    Icon: SearchIcon,
+    title: 'Search the catalog',
+    body: "Want one you don't have yet? Find it and add to your wishlist.",
   },
   {
     href: '/add/manual',

@@ -8,7 +8,7 @@ import { Field, TextAreaField } from '@/components/ui/Field';
 import { CarIcon } from '@/components/ui/icons';
 import { compressImage } from '@/lib/image-compress';
 import { uploadItemPhoto } from '@/lib/photos';
-import type { CollectionItemDTO, ItemSource } from '@/models/CollectionItem';
+import type { CollectionItemDTO, ItemSource, ItemStatus } from '@/models/CollectionItem';
 
 export interface ItemFormInitial {
   name?: string;
@@ -37,10 +37,26 @@ interface Props {
   /** Already-processed photo from camera/visual flow. */
   photoBlob?: Blob | null;
   submitLabel?: string;
+  /** Owned vs Wanted (wishlist) at add-time. Defaults to owned. */
+  initialStatus?: ItemStatus;
 }
 
-export function ItemForm({ source, initial = {}, embedding, photoBlob, submitLabel }: Props) {
+/** Own/Want is the only meaningful choice at add-time (sold/duplicate come later). */
+const STATUS_CHOICES: { value: ItemStatus; label: string; hint: string }[] = [
+  { value: 'owned', label: 'I own it', hint: 'In your garage' },
+  { value: 'wanted', label: 'I want it', hint: 'On your wishlist' },
+];
+
+export function ItemForm({
+  source,
+  initial = {},
+  embedding,
+  photoBlob,
+  submitLabel,
+  initialStatus = 'owned',
+}: Props) {
   const router = useRouter();
+  const [status, setStatus] = useState<ItemStatus>(initialStatus);
   const [name, setName] = useState(initial.name ?? '');
   const [year, setYear] = useState(initial.year?.toString() ?? '');
   const [series, setSeries] = useState(initial.series ?? '');
@@ -107,6 +123,7 @@ export function ItemForm({ source, initial = {}, embedding, photoBlob, submitLab
           photos: remotePhotos,
           embedding,
           source,
+          status,
         }),
       });
       const data = (await res.json()) as { item?: CollectionItemDTO; error?: string };
@@ -225,6 +242,27 @@ export function ItemForm({ source, initial = {}, embedding, photoBlob, submitLab
         <p className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</p>
       ) : null}
 
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label="Own or want">
+        {STATUS_CHOICES.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            onClick={() => setStatus(c.value)}
+            aria-pressed={status === c.value}
+            className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+              status === c.value
+                ? 'border-accent bg-accent/15'
+                : 'border-white/10 bg-panel hover:border-white/25'
+            }`}
+          >
+            <span className={`block text-sm font-semibold ${status === c.value ? 'text-accent' : 'text-ink'}`}>
+              {c.label}
+            </span>
+            <span className="block text-xs text-ink-muted">{c.hint}</span>
+          </button>
+        ))}
+      </div>
+
       {initial.upc ? (
         <p className="rounded-xl bg-panel px-4 py-2 font-mono text-xs text-ink-muted">
           UPC <span className="text-accent">{initial.upc}</span>
@@ -266,7 +304,7 @@ export function ItemForm({ source, initial = {}, embedding, photoBlob, submitLab
 
       {/* Thumb zone: submit pinned visually at the bottom of the form */}
       <Button type="submit" disabled={Boolean(busy)} className="mt-2">
-        {busy ?? (submitLabel ?? 'Add to collection')}
+        {busy ?? submitLabel ?? (status === 'wanted' ? 'Add to wishlist' : 'Add to collection')}
       </Button>
     </form>
   );
