@@ -1,6 +1,9 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import QRCode from 'qrcode';
 import { getSessionUser } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
+import { isDesktopUserAgent } from '@/lib/device';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { PhoneFirstAuth } from '@/components/auth/PhoneFirstAuth';
 import { TryDemoButton } from '@/components/demo/TryDemoButton';
@@ -19,6 +22,21 @@ export default async function LoginPage({
     if (user) redirect('/collection');
   }
   const { error } = await searchParams;
+
+  // Phone-first detection at SSR so the right surface paints first (no flash).
+  const h = await headers();
+  const isDesktop = isDesktopUserAgent(h.get('user-agent'));
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? '';
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const qr =
+    isDesktop && host
+      ? await QRCode.toDataURL(`${proto}://${host}/login`, {
+          width: 320,
+          margin: 1,
+          color: { dark: '#0a0a0a', light: '#fff113' }, // bat-gold QR on the brand accent
+          errorCorrectionLevel: 'M',
+        }).catch(() => null)
+      : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-end px-6 pb-16 pt-safe">
@@ -41,7 +59,7 @@ export default async function LoginPage({
           </p>
         ) : null}
         {configured ? (
-          <PhoneFirstAuth>
+          <PhoneFirstAuth initialDesktop={isDesktop} qr={qr}>
             <LoginForm />
             <TryDemoButton />
           </PhoneFirstAuth>

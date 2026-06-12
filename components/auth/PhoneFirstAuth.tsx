@@ -2,46 +2,42 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from 'react';
-import QRCode from 'qrcode';
 import { Logo } from '@/components/ui/Logo';
 
 /**
  * Gotham Garage is phone-first — the barcode scanner and photo-match need a phone
- * camera. On a desktop/laptop we lead with a QR code so the visitor can open
- * the app on their phone, with an escape hatch to sign in on desktop anyway
- * (browsing the collection works fine without a camera).
+ * camera. On a desktop/laptop we lead with a QR code so the visitor can open the
+ * app on their phone. There is no desktop browser fallback (the app needs a
+ * camera), so the QR is the only desktop surface.
  *
- * `children` is the normal auth UI (the sign-in form), shown directly on phones.
+ * `initialDesktop` and `qr` are computed at SSR (User-Agent + server-side QR), so
+ * the correct surface renders on the FIRST paint — no client swap, no layout
+ * shift. The client only refines `isDesktop` with matchMedia for edge cases
+ * (touch laptops, narrow windows, iPadOS spoofing macOS).
+ *
+ * `children` is the normal auth UI (the sign-in form), shown on phones.
  */
-export function PhoneFirstAuth({ children }: { children: React.ReactNode }) {
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [qr, setQr] = useState<string | null>(null);
+export function PhoneFirstAuth({
+  children,
+  initialDesktop,
+  qr,
+}: {
+  children: React.ReactNode;
+  initialDesktop: boolean;
+  qr: string | null;
+}) {
+  const [isDesktop, setIsDesktop] = useState(initialDesktop);
 
   useEffect(() => {
-    setMounted(true);
     // "Desktop" = a wide screen with a precise pointer (mouse) and no touch.
     const mq = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
     const update = () => setIsDesktop(mq.matches && !('ontouchstart' in window));
     update();
     mq.addEventListener('change', update);
-
-    QRCode.toDataURL(window.location.origin + '/login', {
-      width: 320,
-      margin: 1,
-      color: { dark: '#0a0a0a', light: '#fff113' }, // bat-gold QR on the brand accent
-      errorCorrectionLevel: 'M',
-    })
-      .then(setQr)
-      .catch(() => setQr(null));
-
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  // Until mounted, render the form (mobile-first assumption — avoids a desktop
-  // visitor seeing nothing). On desktop we then swap to the QR-only screen;
-  // there is no browser fallback (the app needs a phone camera).
-  if (!mounted || !isDesktop) {
+  if (!isDesktop) {
     return <>{children}</>;
   }
 
