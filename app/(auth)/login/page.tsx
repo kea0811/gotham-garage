@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { PhoneFirstAuth } from '@/components/auth/PhoneFirstAuth';
+import { TryDemoButton } from '@/components/demo/TryDemoButton';
 
 export const metadata = { title: 'Sign in' };
 export const dynamic = 'force-dynamic';
@@ -40,9 +41,12 @@ export default async function LoginPage({
           </p>
         ) : null}
         {configured ? (
-          <PhoneFirstAuth>
-            <LoginForm />
-          </PhoneFirstAuth>
+          <>
+            <PhoneFirstAuth>
+              <LoginForm />
+            </PhoneFirstAuth>
+            <TryDemoButton />
+          </>
         ) : (
           <div className="rounded-2xl border border-white/10 bg-panel p-5">
             <h2 className="text-base font-semibold text-ink">Sign-in not configured</h2>

@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { ArrowLeftIcon } from '@/components/ui/icons';
 import { getSessionUser } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
 import { isDbConfigured } from '@/lib/db';
+import { DEMO_COOKIE } from '@/lib/demo/constants';
 import { SettingsActions } from '@/components/settings/SettingsActions';
 import pkg from '@/package.json';
 
@@ -11,6 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function SettingsPage() {
   const user = await getSessionUser();
+  const isDemo = (await cookies()).get(DEMO_COOKIE)?.value === '1';
 
   return (
     <main className="flex min-h-screen flex-col px-4 pb-12 pt-safe">
@@ -23,8 +26,20 @@ export default async function SettingsPage() {
 
       <section className="mt-6 rounded-2xl border border-white/10 bg-panel p-5">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-muted">Account</h2>
-        <p className="mt-2 text-base text-ink">{user?.email ?? 'Unknown'}</p>
-        <p className="mt-1 font-mono text-xs text-ink-muted">{user?.id ?? ''}</p>
+        {isDemo ? (
+          <>
+            <p className="mt-2 text-base font-semibold text-accent">Demo mode</p>
+            <p className="mt-1 text-sm text-ink-muted">
+              Nothing is saved to the cloud — your cars live only in this browser and reset when
+              you exit the demo.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="mt-2 text-base text-ink">{user?.email ?? 'Unknown'}</p>
+            <p className="mt-1 font-mono text-xs text-ink-muted">{user?.id ?? ''}</p>
+          </>
+        )}
       </section>
 
       <section className="mt-4 rounded-2xl border border-white/10 bg-panel p-5">

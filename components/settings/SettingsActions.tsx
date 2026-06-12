@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { isDemoMode, exitDemoMode } from '@/lib/demo/mode';
 import type { CollectionItemDTO } from '@/models/CollectionItem';
 
 interface ListResponse {
@@ -67,6 +68,12 @@ export function SettingsActions() {
 
   async function signOut() {
     setBusy('signout');
+    // Demo guest: clear the local store + cookie, no Supabase session to end.
+    if (isDemoMode()) {
+      await exitDemoMode();
+      window.location.assign('/login');
+      return;
+    }
     const supabase = getSupabaseBrowserClient();
     if (supabase) await supabase.auth.signOut();
     window.location.assign('/login');

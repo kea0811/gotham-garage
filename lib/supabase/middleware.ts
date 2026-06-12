@@ -13,7 +13,13 @@ type CookieToSet = { name: string; value: string; options: CookieOptions };
 const PUBLIC_PATHS = ['/', '/login', '/reset-password'];
 
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/auth/');
+  // /api/upc is a public product-barcode lookup (no user data) — also lets
+  // demo guests scan. Everything else under /api stays gated.
+  return (
+    PUBLIC_PATHS.includes(pathname) ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/api/upc/')
+  );
 }
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
@@ -47,8 +53,11 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+  // Demo guests have no Supabase session; the (app) layout gates them by the
+  // same cookie. Let them reach pages (their data calls are served locally).
+  const isDemo = request.cookies.get('pitstop-demo')?.value === '1';
 
-  if (!user && !isPublicPath(pathname)) {
+  if (!user && !isDemo && !isPublicPath(pathname)) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Sign in to use Pitstop.' }, { status: 401 });
     }

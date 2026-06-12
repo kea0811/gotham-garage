@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, isDbConfigured } from '@/lib/db';
 import { isValidUpc, lookupUpc, RATE_LIMIT_MESSAGE } from '@/lib/upcitemdb';
-import { requireUser, isErrorResponse, handleRouteError } from '@/lib/api-helpers';
+import { handleRouteError } from '@/lib/api-helpers';
 import type { UpcCacheDoc } from '@/models/UpcCache';
 
 export const dynamic = 'force-dynamic';
@@ -15,9 +15,8 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ code: string }> },
 ) {
-  const user = await requireUser();
-  if (isErrorResponse(user)) return user;
-
+  // Public: a UPC → product-metadata lookup exposes no user data, is cached
+  // server-side, and must work for demo guests (who have no session).
   const { code } = await params;
   if (!isValidUpc(code)) {
     return NextResponse.json({ error: 'UPC must be 12 or 13 digits.' }, { status: 400 });

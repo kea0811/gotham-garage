@@ -1,6 +1,17 @@
 'use client';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { isDemoMode } from '@/lib/demo/mode';
+
+/** Read a Blob as a data URL (used for demo-mode local photo storage). */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error ?? new Error('Could not read image'));
+    r.readAsDataURL(blob);
+  });
+}
 
 /**
  * Client-direct photo uploads to Supabase Storage (no server hop). Photos are
@@ -31,6 +42,13 @@ export interface UploadedPhoto {
 
 /** Upload a compressed JPEG for a collection item; returns a renderable URL. */
 export async function uploadItemPhoto(itemId: string, blob: Blob): Promise<UploadedPhoto> {
+  // Demo mode: keep the photo entirely in the browser as a data URL — nothing
+  // is uploaded. The item (with this inline URL) lives in the local store.
+  if (isDemoMode()) {
+    const url = await blobToDataUrl(blob);
+    return { url, path: `demo/${itemId}` };
+  }
+
   const supabase = getSupabaseBrowserClient();
   if (!supabase) throw new Error(STORAGE_NOT_CONFIGURED_MESSAGE);
 
