@@ -41,12 +41,10 @@ export default async function LoginPage({
           </p>
         ) : null}
         {configured ? (
-          <>
-            <PhoneFirstAuth>
-              <LoginForm />
-            </PhoneFirstAuth>
+          <PhoneFirstAuth>
+            <LoginForm />
             <TryDemoButton />
-          </>
+          </PhoneFirstAuth>
         ) : (
           <div className="rounded-2xl border border-white/10 bg-panel p-5">
             <h2 className="text-base font-semibold text-ink">Sign-in not configured</h2>
