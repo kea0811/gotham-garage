@@ -105,7 +105,16 @@ export function ItemDetail({ id }: { id: string }) {
         <p className="mb-4 rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-danger">{error}</p>
       ) : null}
 
-      {item.photos.length > 0 ? (
+      {item.photos.length === 1 ? (
+        // Single photo: full-width, so it reads as centered in the column.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.photos[0].url}
+          alt={item.name}
+          className="mb-5 h-72 w-full rounded-2xl border border-white/10 object-cover"
+        />
+      ) : item.photos.length > 1 ? (
+        // Multiple photos: peek-carousel (85% width shows the next one).
         <div className="snap-carousel -mx-4 mb-5 flex gap-3 overflow-x-auto px-4">
           {item.photos.map((photo, i) => (
             // eslint-disable-next-line @next/next/no-img-element
