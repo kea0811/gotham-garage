@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { installDemoInterceptor } from '@/lib/demo/interceptor';
 import { exitDemoMode } from '@/lib/demo/mode';
+import { seedDemoIfEmpty } from '@/lib/demo/seed';
 
 /**
  * Rendered inside the (app) layout only when the demo cookie is present.
@@ -22,6 +23,8 @@ export function DemoRuntime() {
   if (typeof window !== 'undefined') installDemoInterceptor();
   useEffect(() => {
     installDemoInterceptor();
+    // Safety net: seed example cars if a demo session somehow has an empty store.
+    void seedDemoIfEmpty();
   }, []);
 
   async function exit() {
