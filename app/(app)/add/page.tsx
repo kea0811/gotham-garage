@@ -32,16 +32,16 @@ const options: Array<{
 
 export default function AddPage() {
   return (
-    <main className="flex min-h-screen flex-col px-4 pb-10 pt-6">
+    <main className="px-4 pb-10 pt-6">
       <nav>
         <Link href="/collection" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
           <ArrowLeftIcon className="h-4 w-4" /> Collection
         </Link>
       </nav>
       <h1 className="mt-4 text-2xl font-bold text-ink">Add a car</h1>
+      <p className="mt-2 text-sm text-ink-muted">Pick how you want to add it.</p>
 
-      {/* Big targets stacked toward the thumb zone */}
-      <div className="mt-auto flex flex-col gap-4 pt-8">
+      <div className="mt-6 flex flex-col gap-4">
         {options.map(({ href, Icon, title, body }) => (
           <Link
             key={href}
