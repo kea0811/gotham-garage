@@ -52,13 +52,20 @@ export function UpcScanner({ onDecoded }: { onDecoded: (upc: string) => void }) 
         </p>
       ) : (
         <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-panel">
-          <video ref={videoRef} className="aspect-[3/4] w-full object-cover" muted playsInline />
-          <div aria-hidden className="pointer-events-none absolute inset-x-8 top-1/2 h-0.5 -translate-y-1/2 rounded bg-accent/80 shadow-[0_0_20px_rgba(167,139,250,0.8)]" />
+          <video ref={videoRef} className="aspect-[4/5] w-full object-cover" muted playsInline />
+          <div aria-hidden className="pointer-events-none absolute inset-x-8 top-1/2 h-0.5 -translate-y-1/2 rounded bg-accent/80 shadow-[0_0_20px_rgba(255,212,0,0.8)]" />
           <p className="absolute inset-x-0 bottom-3 text-center text-xs text-ink-muted">
             Line up the barcode on the back of the card
           </p>
         </div>
       )}
+
+      {/* Manual entry — always available (denied camera, blurry barcode, desktop). */}
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-white/10" />
+        <span className="text-xs uppercase tracking-wider text-ink-muted">or enter the code</span>
+        <span className="h-px flex-1 bg-white/10" />
+      </div>
 
       <form
         className="flex gap-2"
@@ -70,20 +77,24 @@ export function UpcScanner({ onDecoded }: { onDecoded: (upc: string) => void }) 
         <input
           inputMode="numeric"
           pattern="\d{12,13}"
-          placeholder="…or type the 12–13 digits"
-          aria-label="UPC digits"
+          placeholder="Type the 12–13 barcode digits"
+          aria-label="UPC barcode digits"
+          autoComplete="off"
           value={manualUpc}
           onChange={(e) => setManualUpc(e.target.value.replace(/\D/g, '').slice(0, 13))}
-          className="min-h-12 flex-1 rounded-xl border border-white/10 bg-panel px-4 font-mono text-base text-ink placeholder:font-sans placeholder:text-ink-muted focus:border-accent focus:outline-none"
+          className="min-h-12 flex-1 rounded-xl border border-white/10 bg-panel px-4 font-mono text-base tracking-wider text-ink placeholder:font-sans placeholder:tracking-normal placeholder:text-ink-muted focus:border-accent focus:outline-none"
         />
         <button
           type="submit"
           disabled={!/^\d{12,13}$/.test(manualUpc)}
           className="min-h-12 rounded-xl bg-accent px-5 font-semibold text-bg disabled:opacity-40"
         >
-          Go
+          Look up
         </button>
       </form>
+      {manualUpc.length > 0 && manualUpc.length < 12 ? (
+        <p className="text-xs text-ink-muted">{12 - manualUpc.length} more digit(s) to go…</p>
+      ) : null}
     </div>
   );
 }
