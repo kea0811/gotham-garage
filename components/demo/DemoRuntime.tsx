@@ -36,7 +36,7 @@ export function DemoRuntime() {
       className="fixed inset-x-0 bottom-0 z-30 border-t border-accent/30 bg-accent/10 backdrop-blur"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
     >
-      <div className="flex items-center gap-3 px-4 py-2.5 pr-24">
+      <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5">
         <p className="text-xs leading-tight text-ink">
           <span className="font-bold text-accent">Demo mode</span> — nothing is saved; it resets
           when you exit.
