@@ -157,8 +157,8 @@ export function CollectionBrowser() {
 
 function Masthead({ ownedCount, wantedCount }: { ownedCount: number; wantedCount: number }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-bg/90 backdrop-blur">
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
+    <header className="pt-safe-bar sticky top-0 z-20 border-b border-white/10 bg-bg/90 backdrop-blur">
+      <div className="flex items-center justify-between gap-3 px-4 pb-3">
         <Link href="/collection" className="flex min-w-0 items-center gap-3">
           <Logo className="h-11 w-11 shrink-0" />
           <span className="min-w-0">

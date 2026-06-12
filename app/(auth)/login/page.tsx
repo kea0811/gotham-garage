@@ -19,7 +19,7 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-end px-6 pb-16 pt-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-end px-6 pb-16 pt-safe">
       <div className="mb-auto pt-10">
         <p className="text-sm font-extrabold uppercase tracking-[0.3em] text-accent">Pitstop</p>
         <h1 className="mt-3 text-3xl font-bold leading-tight text-ink">

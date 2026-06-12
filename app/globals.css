@@ -20,6 +20,17 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Safe-area helpers for standalone (home-screen) mode, where the iOS
+   translucent status bar overlays content. */
+@layer utilities {
+  .pt-safe {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+  }
+  .pt-safe-bar {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+  }
+}
+
 /* Thumb-friendly horizontal photo carousel */
 .snap-carousel {
   scroll-snap-type: x mandatory;

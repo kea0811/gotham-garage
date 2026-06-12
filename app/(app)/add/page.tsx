@@ -32,7 +32,7 @@ const options: Array<{
 
 export default function AddPage() {
   return (
-    <main className="px-4 pb-10 pt-6">
+    <main className="px-4 pb-10 pt-safe">
       <nav>
         <Link href="/collection" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
           <ArrowLeftIcon className="h-4 w-4" /> Collection

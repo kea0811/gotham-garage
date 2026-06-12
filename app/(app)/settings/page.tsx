@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   const user = await getSessionUser();
 
   return (
-    <main className="flex min-h-screen flex-col px-4 pb-12 pt-6">
+    <main className="flex min-h-screen flex-col px-4 pb-12 pt-safe">
       <nav className="mb-4">
         <Link href="/collection" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
           <ArrowLeftIcon className="h-4 w-4" /> Collection

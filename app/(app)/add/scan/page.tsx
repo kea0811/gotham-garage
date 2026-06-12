@@ -6,7 +6,7 @@ export const metadata = { title: 'Scan UPC' };
 
 export default function ScanPage() {
   return (
-    <main className="min-h-screen px-4 pb-16 pt-6">
+    <main className="min-h-screen px-4 pb-16 pt-safe">
       <nav className="mb-4">
         <Link href="/add" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
           <ArrowLeftIcon className="h-4 w-4" /> Add a car
