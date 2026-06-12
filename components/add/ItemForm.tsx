@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Field, TextAreaField } from '@/components/ui/Field';
+import { CarIcon } from '@/components/ui/icons';
 import { compressImage } from '@/lib/image-compress';
 import { uploadItemPhoto } from '@/lib/photos';
 import type { CollectionItemDTO, ItemSource } from '@/models/CollectionItem';
@@ -188,7 +189,7 @@ export function ItemForm({ source, initial = {}, embedding, photoBlob, submitLab
                     className="h-14 w-14 rounded-lg object-cover"
                   />
                 ) : (
-                  <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-lg bg-panel text-xl">🚗</span>
+                  <span aria-hidden className="flex h-14 w-14 items-center justify-center rounded-lg bg-panel text-ink-muted/50"><CarIcon className="h-6 w-6" /></span>
                 )}
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-ink">{d.item.name}</span>

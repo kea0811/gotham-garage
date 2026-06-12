@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { fetchWithIdbFallback } from '@/lib/idb-cache';
 import { Spinner } from '@/components/ui/Spinner';
 import { Logo } from '@/components/ui/Logo';
+import { GearIcon } from '@/components/ui/icons';
 import { ItemCard } from '@/components/collection/ItemCard';
 import { CameraFab } from '@/components/collection/CameraFab';
 import type { CollectionItemDTO } from '@/models/CollectionItem';
@@ -184,7 +185,7 @@ function Masthead({ ownedCount, wantedCount }: { ownedCount: number; wantedCount
             aria-label="Settings"
             className="hidden h-11 w-11 items-center justify-center rounded-full text-ink-muted hover:text-ink sm:flex"
           >
-            ⚙
+            <GearIcon className="h-5 w-5" />
           </Link>
         </div>
       </div>

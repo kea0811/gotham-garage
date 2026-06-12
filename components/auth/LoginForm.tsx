@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
+import { ArrowLeftIcon } from '@/components/ui/icons';
 
 type Mode = 'signin' | 'forgot';
 
@@ -128,9 +129,9 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => switchMode('signin')}
-            className="text-accent underline-offset-4 hover:underline"
+            className="inline-flex items-center gap-1.5 text-accent underline-offset-4 hover:underline"
           >
-            ← Back to sign in
+            <ArrowLeftIcon className="h-4 w-4" /> Back to sign in
           </button>
         )}
       </div>

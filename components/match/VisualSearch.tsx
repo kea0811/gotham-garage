@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { CameraIcon, CarIcon } from '@/components/ui/icons';
 import { ItemForm } from '@/components/add/ItemForm';
 import { removeImageBackground } from '@/lib/bg-removal';
 import { embedImage } from '@/lib/embedding';
@@ -92,7 +93,7 @@ export function VisualSearch() {
           and finds the closest matches in your garage — all on your phone.
         </p>
         <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-accent/50 bg-panel p-6 text-center">
-          <span aria-hidden className="text-4xl">📸</span>
+          <CameraIcon className="h-9 w-9 text-accent" />
           <span className="text-base font-semibold text-ink">Take or choose a photo</span>
           <input
             type="file"
@@ -176,7 +177,7 @@ export function VisualSearch() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.photos[0].url} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
                     ) : (
-                      <div aria-hidden className="flex h-full w-full items-center justify-center text-3xl text-ink-muted">🚗</div>
+                      <div aria-hidden className="flex h-full w-full items-center justify-center text-ink-muted/50"><CarIcon className="h-7 w-7" /></div>
                     )}
                   </div>
                   <div className="p-3">

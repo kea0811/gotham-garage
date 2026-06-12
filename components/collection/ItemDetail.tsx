@@ -7,6 +7,7 @@ import { fetchWithIdbFallback } from '@/lib/idb-cache';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField } from '@/components/ui/Field';
+import { ArrowLeftIcon, CarIcon } from '@/components/ui/icons';
 import { ITEM_STATUSES, type CollectionItemDTO, type ItemStatus } from '@/models/CollectionItem';
 
 interface DetailResponse {
@@ -96,8 +97,8 @@ export function ItemDetail({ id }: { id: string }) {
   return (
     <div>
       <nav className="mb-4">
-        <Link href="/collection" className="text-sm text-ink-muted hover:text-ink">
-          ← Collection
+        <Link href="/collection" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
+          <ArrowLeftIcon className="h-4 w-4" /> Collection
         </Link>
       </nav>
 
@@ -127,8 +128,8 @@ export function ItemDetail({ id }: { id: string }) {
           ))}
         </div>
       ) : (
-        <div aria-hidden className="mb-5 flex h-48 items-center justify-center rounded-2xl bg-panel text-5xl text-ink-muted">
-          🚗
+        <div aria-hidden className="mb-5 flex h-48 items-center justify-center rounded-2xl bg-panel text-ink-muted/50">
+          <CarIcon className="h-14 w-14" />
         </div>
       )}
 

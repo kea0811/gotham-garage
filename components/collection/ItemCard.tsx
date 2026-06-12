@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { CarIcon } from '@/components/ui/icons';
 import type { CollectionItemDTO } from '@/models/CollectionItem';
 
 export function ItemCard({ item }: { item: CollectionItemDTO }) {
@@ -23,9 +24,9 @@ export function ItemCard({ item }: { item: CollectionItemDTO }) {
           ) : (
             <div
               aria-hidden
-              className="flex h-full w-full items-center justify-center text-3xl text-ink-muted"
+              className="flex h-full w-full items-center justify-center text-ink-muted/50"
             >
-              🚗
+              <CarIcon className="h-8 w-8" />
             </div>
           )}
         </div>

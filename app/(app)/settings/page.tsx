@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowLeftIcon } from '@/components/ui/icons';
 import { getSessionUser } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
 import { isDbConfigured } from '@/lib/db';
@@ -14,8 +15,8 @@ export default async function SettingsPage() {
   return (
     <main className="flex min-h-screen flex-col px-4 pb-12 pt-6">
       <nav className="mb-4">
-        <Link href="/collection" className="text-sm text-ink-muted hover:text-ink">
-          ← Collection
+        <Link href="/collection" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
+          <ArrowLeftIcon className="h-4 w-4" /> Collection
         </Link>
       </nav>
       <h1 className="text-2xl font-bold text-ink">Settings</h1>
