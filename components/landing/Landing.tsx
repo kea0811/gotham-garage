@@ -73,18 +73,21 @@ export function Landing() {
           <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,transparent,rgba(10,10,10,0.65))]" />
         </motion.div>
 
-        {/* Floating hero car — mix-blend-screen drops the image's black bg into
-            the dark hero so it reads as a cutout, not a box. */}
+        {/* Floating hero car — transparent cutout (AI background removal). */}
         <motion.div
           style={{ y: carY }}
           initial={reduce ? false : { opacity: 0, scale: 0.85, y: 40 }}
           animate={reduce ? {} : { opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none absolute bottom-[10%] right-[3%] w-[48%] max-w-lg sm:bottom-[13%]"
+          className="pointer-events-none absolute bottom-[12%] right-[3%] w-[50%] max-w-lg sm:bottom-[16%]"
         >
           {/* gold halo */}
-          <div className="absolute inset-0 -z-10 translate-y-6 scale-90 rounded-full bg-accent/20 blur-3xl" />
-          <img src="/landing/car.webp" alt="Die-cast model car" className="w-full mix-blend-screen" />
+          <div className="absolute inset-0 -z-10 translate-y-4 scale-75 rounded-full bg-accent/25 blur-3xl" />
+          <img
+            src="/landing/car.webp"
+            alt="Die-cast model car"
+            className="w-full drop-shadow-[0_24px_50px_rgba(0,0,0,0.55)]"
+          />
         </motion.div>
 
         {/* Hero copy */}
