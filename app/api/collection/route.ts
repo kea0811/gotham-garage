@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { Filter } from 'mongodb';
-import { getDb } from '@/lib/db';
+import { getDb, hasTextIndex } from '@/lib/db';
 import { requireUser, isErrorResponse, handleRouteError } from '@/lib/api-helpers';
 import { toItemDTO } from '@/lib/dto';
 import { parsePhotos } from '@/lib/validate';
@@ -15,6 +15,11 @@ export const dynamic = 'force-dynamic';
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 200;
 const EMBEDDING_DIM = 384;
+
+/** Escape user input for safe use inside a RegExp (search fallback). */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /** GET /api/collection — paginated list with search + filters. */
 export async function GET(req: Request) {
@@ -37,20 +42,32 @@ export async function GET(req: Request) {
     const series = url.searchParams.get('series');
     const status = url.searchParams.get('status');
 
+    const db = await getDb();
+    const col = db.collection<CollectionItemDoc>('collection_items');
+
+    // Prefer the `$text` index for search, but fall back to a case-insensitive
+    // regex scan when the text index isn't available (e.g. it couldn't be built
+    // under disk pressure). A personal library is small enough that a scan is
+    // fine, and this keeps search working instead of 500-ing.
+    const useTextSearch = Boolean(q) && (await hasTextIndex(db));
+
     const filter: Filter<CollectionItemDoc> = { userId: user.id };
-    if (q) filter.$text = { $search: q };
+    if (q && useTextSearch) {
+      filter.$text = { $search: q };
+    } else if (q) {
+      const rx = new RegExp(escapeRegExp(q), 'i');
+      filter.$or = [{ name: rx }, { notes: rx }, { castingName: rx }, { series: rx }];
+    }
     if (year && /^\d{4}$/.test(year)) filter.year = Number.parseInt(year, 10);
     if (series) filter.series = series;
     if (status && (ITEM_STATUSES as string[]).includes(status)) {
       filter.status = status as CollectionItemDoc['status'];
     }
 
-    const db = await getDb();
-    const col = db.collection<CollectionItemDoc>('collection_items');
     const [docs, total] = await Promise.all([
       col
         .find(filter)
-        .sort(q ? { score: { $meta: 'textScore' } } : { createdAt: -1 })
+        .sort(useTextSearch ? { score: { $meta: 'textScore' } } : { createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .toArray(),

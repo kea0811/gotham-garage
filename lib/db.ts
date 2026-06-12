@@ -22,6 +22,7 @@ export class DbNotConfiguredError extends Error {
 interface MongoGlobals {
   _pitstopClientPromise?: Promise<MongoClient>;
   _pitstopIndexesEnsured?: Promise<void>;
+  _pitstopHasTextIndex?: boolean;
 }
 
 const globals = globalThis as typeof globalThis & MongoGlobals;
@@ -49,31 +50,60 @@ export async function getDb(): Promise<Db> {
   const client = await getClientPromise();
   const db = client.db();
   if (!globals._pitstopIndexesEnsured) {
-    globals._pitstopIndexesEnsured = ensureIndexes(db).catch((err) => {
-      // Allow a retry on the next call rather than caching the failure forever.
-      globals._pitstopIndexesEnsured = undefined;
-      throw err;
-    });
+    // Index creation is best-effort. A failure here — e.g. the server is under
+    // disk pressure and refuses to build an index (Mongo enforces a 500MB
+    // free-space floor for index builds) — must NOT take down reads/writes,
+    // which work fine without the secondary indexes. We log and continue, and
+    // cache the (resolved) promise so we don't retry on every request.
+    globals._pitstopIndexesEnsured = ensureIndexes(db);
   }
   await globals._pitstopIndexesEnsured;
   return db;
 }
 
-/** Create the indexes from PRD §9. Idempotent — safe to call repeatedly. */
+/**
+ * Create the indexes from PRD §9. Each is attempted independently so one
+ * failure (e.g. the text index under disk pressure) doesn't block the others.
+ * Never throws — failures are logged. Idempotent — safe to call repeatedly.
+ */
 export async function ensureIndexes(db: Db): Promise<void> {
-  await Promise.all([
-    db.collection('collection_items').createIndex({ userId: 1, createdAt: -1 }),
-    db.collection('collection_items').createIndex({ userId: 1, upc: 1 }),
-    db
-      .collection('collection_items')
-      .createIndex({ name: 'text', notes: 'text' }, { name: 'item_text_search' }),
-    db.collection('upc_cache').createIndex({ upc: 1 }, { unique: true }),
-    db.collection('upc_misses').createIndex({ upc: 1 }, { unique: true }),
-  ]);
+  const items = db.collection('collection_items');
+  const specs: Array<readonly [string, () => Promise<unknown>]> = [
+    ['items_userId_createdAt', () => items.createIndex({ userId: 1, createdAt: -1 })],
+    ['items_userId_upc', () => items.createIndex({ userId: 1, upc: 1 })],
+    ['item_text_search', () => items.createIndex({ name: 'text', notes: 'text' }, { name: 'item_text_search' })],
+    ['upc_cache_upc', () => db.collection('upc_cache').createIndex({ upc: 1 }, { unique: true })],
+    ['upc_misses_upc', () => db.collection('upc_misses').createIndex({ upc: 1 }, { unique: true })],
+  ];
+  await Promise.all(
+    specs.map(([label, create]) =>
+      create().catch((err: unknown) => {
+        console.warn(`[pitstop] index "${label}" not created:`, err);
+      }),
+    ),
+  );
+}
+
+/**
+ * Whether the collection_items text index exists. Search uses this to pick
+ * between a fast `$text` query and a regex fallback when the text index could
+ * not be built (e.g. disk pressure). Cached per process; reset in tests.
+ */
+export async function hasTextIndex(db: Db): Promise<boolean> {
+  if (globals._pitstopHasTextIndex === undefined) {
+    try {
+      const indexes = await db.collection('collection_items').indexes();
+      globals._pitstopHasTextIndex = indexes.some((i) => i.name === 'item_text_search');
+    } catch {
+      globals._pitstopHasTextIndex = false;
+    }
+  }
+  return globals._pitstopHasTextIndex;
 }
 
 /** Test-only: reset memoized state so each test starts clean. */
 export function resetDbStateForTests(): void {
   globals._pitstopClientPromise = undefined;
   globals._pitstopIndexesEnsured = undefined;
+  globals._pitstopHasTextIndex = undefined;
 }

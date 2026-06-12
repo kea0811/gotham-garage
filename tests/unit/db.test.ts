@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
   const createIndex = vi.fn(async () => 'ok');
-  const collection = vi.fn(() => ({ createIndex }));
+  const indexes = vi.fn(async () => [{ name: '_id_' }, { name: 'item_text_search' }]);
+  const collection = vi.fn(() => ({ createIndex, indexes }));
   const dbObj = { collection };
   const constructedUris: string[] = [];
   let connectCalls = 0;
@@ -22,6 +23,7 @@ const mocks = vi.hoisted(() => {
 
   return {
     createIndex,
+    indexes,
     collection,
     dbObj,
     constructedUris,
@@ -37,6 +39,7 @@ import {
   ensureIndexes,
   getClientPromise,
   getDb,
+  hasTextIndex,
   isDbConfigured,
   resetDbStateForTests,
 } from '@/lib/db';
@@ -47,6 +50,8 @@ const URI = 'mongodb://mongo:secret@localhost:27017/pitstop?authSource=admin';
 beforeEach(() => {
   resetDbStateForTests();
   mocks.createIndex.mockClear();
+  mocks.indexes.mockClear();
+  mocks.indexes.mockResolvedValue([{ name: '_id_' }, { name: 'item_text_search' }]);
   mocks.collection.mockClear();
   mocks.constructedUris.length = 0;
   vi.stubEnv('MONGODB_URI', URI);
@@ -101,14 +106,23 @@ describe('getDb', () => {
     await expect(getDb()).rejects.toBeInstanceOf(DbNotConfiguredError);
   });
 
-  it('retries index creation after a failure instead of caching it', async () => {
-    mocks.createIndex.mockRejectedValueOnce(new Error('transient index failure'));
-    await expect(getDb()).rejects.toThrow('transient index failure');
+  it('does not throw when an index fails to build (disk pressure)', async () => {
+    // A single index failing (e.g. Mongo refuses an index build under disk
+    // pressure) must not take down reads/writes. getDb still resolves the db.
+    mocks.createIndex.mockRejectedValueOnce(new Error('OutOfDiskSpace'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const db = await getDb(); // succeeds on retry
+    const db = await getDb();
     expect(db).toBe(mocks.dbObj);
-    // First attempt fired all 5 (one rejected), retry fired 5 more.
-    expect(mocks.createIndex).toHaveBeenCalledTimes(10);
+    // All 5 still attempted; the rejected one is swallowed + logged.
+    expect(mocks.createIndex).toHaveBeenCalledTimes(5);
+    expect(warn).toHaveBeenCalled();
+
+    // Result is cached — a second call does not re-attempt index creation.
+    await getDb();
+    expect(mocks.createIndex).toHaveBeenCalledTimes(5);
+
+    warn.mockRestore();
   });
 });
 
@@ -122,6 +136,26 @@ describe('ensureIndexes', () => {
       { name: 'text', notes: 'text' },
       { name: 'item_text_search' },
     );
+  });
+});
+
+describe('hasTextIndex', () => {
+  it('returns true when the text index is present, and caches the result', async () => {
+    expect(await hasTextIndex(mocks.dbObj as unknown as Db)).toBe(true);
+    expect(mocks.indexes).toHaveBeenCalledTimes(1);
+    // Cached — second call doesn't re-query indexes.
+    expect(await hasTextIndex(mocks.dbObj as unknown as Db)).toBe(true);
+    expect(mocks.indexes).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns false when the text index is absent', async () => {
+    mocks.indexes.mockResolvedValueOnce([{ name: '_id_' }]);
+    expect(await hasTextIndex(mocks.dbObj as unknown as Db)).toBe(false);
+  });
+
+  it('returns false (does not throw) when listing indexes fails', async () => {
+    mocks.indexes.mockRejectedValueOnce(new Error('connection lost'));
+    expect(await hasTextIndex(mocks.dbObj as unknown as Db)).toBe(false);
   });
 });
 
